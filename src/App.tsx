@@ -1,8 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
-import Button from "@mui/material/Button";
-import { astrologicalSign, getNextUfcEvent } from "./scraping/getNextUfcEvent";
+import {
+  astrologicalSign,
+  astrologicalSignEmojis,
+  getNextUfcEvent,
+  getSignWithEmoji,
+} from "./scraping/getNextUfcEvent";
 import {
   Table,
   TableBody,
@@ -12,15 +16,32 @@ import {
   TableRow,
   Paper,
   Typography,
+  Divider,
 } from "@mui/material";
 
+// Create a deep blue indigo theme
 const theme = createTheme({
   palette: {
     primary: {
-      main: "#1976d2",
+      main: "#283593", // Deep indigo
     },
     secondary: {
-      main: "#dc004e",
+      main: "#ff4081", // Contrasting pink
+    },
+    background: {
+      default: "#1a237e", // Darker indigo for background
+      paper: "#283593", // Slightly lighter indigo for paper components
+    },
+    text: {
+      primary: "#ffffff", // White text for contrast
+      secondary: "#e0e0e0", // Light gray for secondary text
+    },
+  },
+  typography: {
+    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    h4: {
+      fontWeight: 600,
+      color: "#ffffff", // White for headings
     },
   },
 });
@@ -39,35 +60,85 @@ export const App: React.FC = () => {
   }, []); // Empty dependency array
 
   console.log({ nextCard });
+  const cellStyle = {
+    color: theme.palette.text.primary,
+    textAlign: "center",
+  };
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <div style={{ padding: "20px" }}>
-        <Typography variant="h4" gutterBottom>
+      <div
+        style={{
+          padding: "20px",
+          backgroundColor: theme.palette.background.default,
+          minHeight: "100vh",
+          justifySelf: "center",
+        }}
+      >
+        <Typography variant="h4" gutterBottom align="center">
           {nextCard?.eventName || "Loading..."}
         </Typography>
         {nextCard && (
-          <TableContainer component={Paper}>
+          <TableContainer component={Paper} sx={{ width: "90vw" }}>
             <Table>
               <TableHead>
-                <TableRow>
-                  <TableCell>Fighter 1</TableCell>
-                  <TableCell>Astrological Sign</TableCell>
-                  <TableCell>Fighter 2</TableCell>
-                  <TableCell>Astrological Sign</TableCell>
+                <TableRow sx={{ backgroundColor: theme.palette.primary.main }}>
+                  <TableCell
+                    sx={{
+                      ...cellStyle,
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Star Sign
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      ...cellStyle,
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Fighter 1
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      ...cellStyle,
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Fighter 2
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      ...cellStyle,
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Star Sign
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {nextCard.birthDayData.map((matchup: any, index: number) => (
-                  <TableRow key={index}>
-                    <TableCell>{matchup[0].name}</TableCell>
-                    <TableCell>
-                      {astrologicalSign(new Date(matchup[0].birthDate))}
+                  <TableRow
+                    key={index}
+                    sx={{
+                      "&:hover": {
+                        backgroundColor: theme.palette.action.hover,
+                      }, // Highlight effect on hover
+                      backgroundColor:
+                        index % 2 === 0
+                          ? theme.palette.background.paper
+                          : "#303f9f", // Alternate row colors
+                    }}
+                  >
+                    <TableCell sx={cellStyle}>
+                      {getSignWithEmoji(matchup[0].birthDate)}
                     </TableCell>
-                    <TableCell>{matchup[1].name}</TableCell>
-                    <TableCell>
-                      {astrologicalSign(new Date(matchup[1].birthDate))}
+                    <TableCell sx={cellStyle}>{matchup[0].name}</TableCell>
+                    <TableCell sx={cellStyle}>{matchup[1].name}</TableCell>
+                    <TableCell sx={cellStyle}>
+                      {getSignWithEmoji(matchup[1].birthDate)}
                     </TableCell>
                   </TableRow>
                 ))}

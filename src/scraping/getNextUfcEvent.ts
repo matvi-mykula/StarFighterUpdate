@@ -33,3 +33,25 @@ export const astrologicalSign = (birthDate: Date) => {
   if ((month === 2 && day >= 19) || (month === 3 && day <= 20)) return "Pisces";
   return "Unknown";
 };
+
+export const astrologicalSignEmojis = {
+  Aries: "♈️", // Ram
+  Taurus: "♉️", // Bull
+  Gemini: "♊️", // Twins
+  Cancer: "♋️", // Crab
+  Leo: "♌️", // Lion
+  Virgo: "♍️", // Virgin/Maiden
+  Libra: "♎️", // Scales
+  Scorpio: "♏️", // Scorpion
+  Sagittarius: "♐️", // Archer
+  Capricorn: "♑️", // Goat-Fish
+  Aquarius: "♒️", // Water Bearer
+  Pisces: "♓️", // Fish
+  Unknown: "0",
+};
+
+export function getSignWithEmoji(date: string | number | Date) {
+  const sign = astrologicalSign(new Date(date)); // Assuming astrologicalSign is defined elsewhere
+  const emoji = astrologicalSignEmojis[sign] || ""; // Handle cases where sign is not found
+  return `${sign} - ${emoji}`; // Combine sign and emoji
+}
