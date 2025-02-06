@@ -1,12 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
-import {
-  astrologicalSign,
-  astrologicalSignEmojis,
-  getNextUfcEvent,
-  getSignWithEmoji,
-} from "./scraping/getNextUfcEvent";
+import { getNextUfcEvent, getSignWithEmoji } from "./scraping/getNextUfcEvent";
 import {
   Table,
   TableBody,
@@ -16,8 +11,8 @@ import {
   TableRow,
   Paper,
   Typography,
-  Divider,
 } from "@mui/material";
+import ExpandedRow from "./ExpandedRow";
 
 // Create a deep blue indigo theme
 const theme = createTheme({
@@ -48,6 +43,7 @@ const theme = createTheme({
 
 export const App: React.FC = () => {
   const [nextCard, setNextCard] = useState<any>(null); // State to store event data
+  const [expandedRow, setExpandedRow] = useState<number | null>(null); // State to track the expanded row
 
   // Fetch the next UFC event on mount
   useEffect(() => {
@@ -63,6 +59,10 @@ export const App: React.FC = () => {
   const cellStyle = {
     color: theme.palette.text.primary,
     textAlign: "center",
+  };
+
+  const handleAccordionChange = (index: number) => {
+    setExpandedRow(expandedRow === index ? null : index); // Toggle the expanded row
   };
 
   return (
@@ -119,28 +119,35 @@ export const App: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {nextCard.birthDayData.map((matchup: any, index: number) => (
-                  <TableRow
-                    key={index}
-                    sx={{
-                      "&:hover": {
-                        backgroundColor: theme.palette.action.hover,
-                      }, // Highlight effect on hover
-                      backgroundColor:
-                        index % 2 === 0
-                          ? theme.palette.background.paper
-                          : "#303f9f", // Alternate row colors
-                    }}
-                  >
-                    <TableCell sx={cellStyle}>
-                      {getSignWithEmoji(matchup[0].birthDate)}
-                    </TableCell>
-                    <TableCell sx={cellStyle}>{matchup[0].name}</TableCell>
-                    <TableCell sx={cellStyle}>{matchup[1].name}</TableCell>
-                    <TableCell sx={cellStyle}>
-                      {getSignWithEmoji(matchup[1].birthDate)}
-                    </TableCell>
-                  </TableRow>
+                {nextCard?.birthDayData?.map((matchup: any, index: number) => (
+                  <>
+                    <TableRow
+                      key={index}
+                      sx={{
+                        "&:hover": {
+                          backgroundColor: theme.palette.action.hover,
+                        },
+                        backgroundColor:
+                          index % 2 === 0
+                            ? theme.palette.background.paper
+                            : "#303f9f",
+                      }}
+                      onClick={() => handleAccordionChange(index)} // Handle row click
+                    >
+                      <TableCell sx={cellStyle}>
+                        {getSignWithEmoji(matchup[0].birthDate)}
+                      </TableCell>
+                      <TableCell sx={cellStyle}>{matchup[0].name}</TableCell>
+                      <TableCell sx={cellStyle}>{matchup[1].name}</TableCell>
+                      <TableCell sx={cellStyle}>
+                        {getSignWithEmoji(matchup[1].birthDate)}
+                      </TableCell>
+                    </TableRow>
+                    <ExpandedRow
+                      matchup={nextCard.matchups[index]}
+                      expandedRow={expandedRow === index}
+                    />
+                  </>
                 ))}
               </TableBody>
             </Table>
