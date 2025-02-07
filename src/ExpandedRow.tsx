@@ -1,76 +1,116 @@
-import { ExpandMore } from "@mui/icons-material";
 import {
   Accordion,
   AccordionDetails,
-  AccordionSummary,
-  Divider,
+  Table,
+  TableBody,
   TableCell,
+  TableContainer,
   TableRow,
-  Typography,
+  Paper,
   useTheme,
 } from "@mui/material";
 import React from "react";
+import { getSignWithEmoji } from "./scraping/getNextUfcEvent";
 
-const ExpandedRow = ({
+const ExpandingRow = ({
   matchup,
   expandedRow,
+  handleToggle,
+  birthDates,
 }: {
-  matchup: [];
+  matchup: string[][];
   expandedRow: boolean;
+  handleToggle: () => void;
+  birthDates: any;
 }) => {
   const theme = useTheme();
-  if (!expandedRow) return null;
+  const importantStats = [
+    "",
+    "DOB",
+    "Wins/Losses/Draws",
+    "Takedowns Average/15 min.",
+    "Reach",
+    "Most recent fights",
+  ];
+
   return (
-    <TableRow>
-      <TableCell colSpan={4} sx={{ padding: 0 }}>
-        <Accordion
-          expanded={expandedRow} // Check if the row is expanded
-          sx={{
-            backgroundColor: theme.palette.background.default,
-          }}
-        >
-          <AccordionSummary
-            expandIcon={<ExpandMore />}
-            sx={{
-              backgroundColor: theme.palette.primary.main,
-              color: theme.palette.text.primary,
-            }}
-          >
-            <Typography>More Info</Typography>
-          </AccordionSummary>
-          <AccordionDetails
-            sx={{
-              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-              backgroundColor: theme.palette.background.paper,
-              color: theme.palette.text.primary,
-            }}
-          >
-            {matchup}
-            {/* <Typography variant="body1">
-              <strong>Date of Birth:</strong> {matchup[0].birthDate} vs{" "}
-              {matchup[1].birthDate}
-            </Typography>
-            <Divider sx={{ margin: "10px 0" }} />
-            <Typography variant="body1">
-              <strong>Most Recent Fights:</strong>
-            </Typography>
-            <Typography variant="body2">
-              {matchup[0].name}: {matchup[0].mostRecentFights[0]} |{" "}
-              {matchup[0].mostRecentFights[1]}
-            </Typography>
-            <Typography variant="body2">
-              {matchup[1].name}: {matchup[1].mostRecentFights[0]} |{" "}
-              {matchup[1].mostRecentFights[1]}
-            </Typography>
-            <Divider sx={{ margin: "10px 0" }} />
-            <Typography variant="body1">
-              <strong>Reach:</strong> {matchup[0].reach} vs {matchup[1].reach}
-            </Typography> */}
-          </AccordionDetails>
-        </Accordion>
-      </TableCell>
-    </TableRow>
+    <>
+      {/* Main Row (Clickable to Expand) */}
+      <TableRow
+        onClick={handleToggle}
+        sx={{
+          cursor: "pointer",
+          "&:hover": { backgroundColor: theme.palette.action.hover },
+          backgroundColor: expandedRow
+            ? theme.palette.action.selected
+            : "inherit",
+        }}
+      >
+        {/* Fighter 1's Sign */}
+        <TableCell sx={{ textAlign: "center" }}>
+          {getSignWithEmoji(birthDates[0].birthDate)}
+        </TableCell>
+
+        {/* Fighter 1 Name */}
+        <TableCell sx={{ textAlign: "center" }}>{matchup[0][1]}</TableCell>
+
+        {/* Fighter 2 Name */}
+        <TableCell sx={{ textAlign: "center" }}>{matchup[0][2]}</TableCell>
+
+        {/* Fighter 2's Sign */}
+        <TableCell sx={{ textAlign: "center" }}>
+          {getSignWithEmoji(birthDates[1].birthDate)}
+        </TableCell>
+      </TableRow>
+
+      {/* Expanding Row */}
+      {expandedRow && (
+        <TableRow>
+          <TableCell colSpan={4} sx={{ padding: 0 }}>
+            <Accordion expanded sx={{ boxShadow: "none", margin: 0 }}>
+              <AccordionDetails
+                sx={{
+                  padding: "4px",
+                  backgroundColor: theme.palette.background.paper,
+                }}
+              >
+                <TableContainer
+                  component={Paper}
+                  sx={{ backgroundColor: theme.palette.primary.light }}
+                >
+                  <Table size="small">
+                    <TableBody>
+                      {matchup
+                        .filter((row) => importantStats.includes(row[0]))
+                        .map((row, index) => (
+                          <TableRow key={index}>
+                            <TableCell
+                              sx={{
+                                fontWeight: "bold",
+                                fontSize: "0.75rem",
+                                width: "25%",
+                              }}
+                            >
+                              {row[0]}
+                            </TableCell>
+                            <TableCell sx={{ fontSize: "0.75rem" }}>
+                              {row[1]}
+                            </TableCell>
+                            <TableCell sx={{ fontSize: "0.75rem" }}>
+                              {row[2]}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </AccordionDetails>
+            </Accordion>
+          </TableCell>
+        </TableRow>
+      )}
+    </>
   );
 };
 
-export default ExpandedRow;
+export default ExpandingRow;

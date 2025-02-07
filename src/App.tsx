@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
-import { getNextUfcEvent, getSignWithEmoji } from "./scraping/getNextUfcEvent";
+import { getNextUfcEvent } from "./scraping/getNextUfcEvent";
 import {
   Table,
   TableBody,
@@ -12,7 +12,7 @@ import {
   Paper,
   Typography,
 } from "@mui/material";
-import ExpandedRow from "./ExpandedRow";
+import ExpandingRow from "./ExpandedRow";
 
 // Create a deep blue indigo theme
 const theme = createTheme({
@@ -55,14 +55,10 @@ export const App: React.FC = () => {
     fetchNextEvent();
   }, []); // Empty dependency array
 
-  console.log({ nextCard });
   const cellStyle = {
     color: theme.palette.text.primary,
     textAlign: "center",
-  };
-
-  const handleAccordionChange = (index: number) => {
-    setExpandedRow(expandedRow === index ? null : index); // Toggle the expanded row
+    fontWeight: "bold",
   };
 
   return (
@@ -87,7 +83,6 @@ export const App: React.FC = () => {
                   <TableCell
                     sx={{
                       ...cellStyle,
-                      fontWeight: "bold",
                     }}
                   >
                     Star Sign
@@ -95,7 +90,6 @@ export const App: React.FC = () => {
                   <TableCell
                     sx={{
                       ...cellStyle,
-                      fontWeight: "bold",
                     }}
                   >
                     Fighter 1
@@ -103,7 +97,6 @@ export const App: React.FC = () => {
                   <TableCell
                     sx={{
                       ...cellStyle,
-                      fontWeight: "bold",
                     }}
                   >
                     Fighter 2
@@ -111,7 +104,6 @@ export const App: React.FC = () => {
                   <TableCell
                     sx={{
                       ...cellStyle,
-                      fontWeight: "bold",
                     }}
                   >
                     Star Sign
@@ -119,35 +111,16 @@ export const App: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {nextCard?.birthDayData?.map((matchup: any, index: number) => (
-                  <>
-                    <TableRow
-                      key={index}
-                      sx={{
-                        "&:hover": {
-                          backgroundColor: theme.palette.action.hover,
-                        },
-                        backgroundColor:
-                          index % 2 === 0
-                            ? theme.palette.background.paper
-                            : "#303f9f",
-                      }}
-                      onClick={() => handleAccordionChange(index)} // Handle row click
-                    >
-                      <TableCell sx={cellStyle}>
-                        {getSignWithEmoji(matchup[0].birthDate)}
-                      </TableCell>
-                      <TableCell sx={cellStyle}>{matchup[0].name}</TableCell>
-                      <TableCell sx={cellStyle}>{matchup[1].name}</TableCell>
-                      <TableCell sx={cellStyle}>
-                        {getSignWithEmoji(matchup[1].birthDate)}
-                      </TableCell>
-                    </TableRow>
-                    <ExpandedRow
-                      matchup={nextCard.matchups[index]}
-                      expandedRow={expandedRow === index}
-                    />
-                  </>
+                {nextCard?.matchups?.map((matchup: any, index: number) => (
+                  <ExpandingRow
+                    key={index}
+                    birthDates={nextCard.birthDayData[index]}
+                    matchup={matchup}
+                    expandedRow={expandedRow === index}
+                    handleToggle={() =>
+                      setExpandedRow(expandedRow === index ? null : index)
+                    }
+                  />
                 ))}
               </TableBody>
             </Table>
