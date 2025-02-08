@@ -11,8 +11,15 @@ import {
   TableRow,
   Paper,
   Typography,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  Link,
 } from "@mui/material";
 import ExpandingRow from "./ExpandedRow";
+import { Info, Star } from "@mui/icons-material";
+import InfoPopup from "./InfoPopup";
 
 // Create a deep blue indigo theme
 const theme = createTheme({
@@ -28,15 +35,15 @@ const theme = createTheme({
       paper: "#283593", // Slightly lighter indigo for paper components
     },
     text: {
-      primary: "#ffffff", // White text for contrast
-      secondary: "#e0e0e0", // Light gray for secondary text
+      primary: "#ffffff",
+      secondary: "#e0e0e0",
     },
   },
   typography: {
     fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
     h4: {
       fontWeight: 600,
-      color: "#ffffff", // White for headings
+      color: "#ffffff",
     },
   },
 });
@@ -72,9 +79,17 @@ export const App: React.FC = () => {
           justifySelf: "center",
         }}
       >
-        <Typography variant="h4" gutterBottom align="center">
+        <InfoPopup />
+
+        <Typography
+          variant="h4"
+          gutterBottom
+          align="center"
+          sx={!nextCard?.eventName ? { marginTop: "80%" } : {}}
+        >
           {nextCard?.eventName || "Loading..."}
         </Typography>
+
         {nextCard && (
           <TableContainer component={Paper} sx={{ width: "90vw" }}>
             <Table>
