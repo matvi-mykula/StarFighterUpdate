@@ -18,7 +18,6 @@ const InfoPopup = () => {
       <Dialog
         open={infoOpen}
         onClose={() => setInfoOpen(false)}
-        sx={{ borderRadius: "50%" }}
         slotProps={{ paper: { sx: { borderRadius: "15px" } } }}
       >
         <DialogTitle sx={{ textAlign: "center" }}>::: About :::</DialogTitle>
@@ -47,8 +46,8 @@ const InfoPopup = () => {
         sx={{
           cursor: "crosshair",
           position: "absolute",
-          top: "15px",
-          left: "15px",
+          top: "25px",
+          left: "25px",
         }}
         onClick={() => {
           setInfoOpen((prev) => !prev);

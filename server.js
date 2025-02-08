@@ -69,8 +69,6 @@ app.get("/api/next-ufc-card", async (req, res) => {
       console.log("Event details table not found.");
       return res.status(404).json({ error: "Event details table not found" });
     }
-    const tableContent = eventTable.html();
-    console.log("Successfully fetched event details table.");
 
     // Step 6: For each row in the event details table, find and process the "View Matchup" button.
     // We'll assume that each row that has a matchup button contains an <a> with text "View Matchup".
@@ -160,20 +158,11 @@ app.get("/api/next-ufc-card", async (req, res) => {
       return rows;
     });
 
-    console.log({ matchups });
-    // const dobRow = matchups.find(
-    //   (row) => row[0].trim().toLowerCase() === "dob"
-    // );
-    // construct an object that is an array of arrays of objects{name:string, date:DOB}
     const birthDayData = [];
 
-    // Assuming you already have an array of rows from the table, each with a structure similar to:
-    // [['DOB', 'Jan 14, 1994', 'Feb 27, 1991'], ...]
-
     for (let i = 0; i < 4; i++) {
-      // Looping through the first 4 fights
+      // Looping through the first 4 fights to get main card
       const matchupTable = matchups[i]; // Get the DOB row for the current fight
-      console.log({ matchupTable });
       const dobRow = matchupTable.find(
         (row) => row[0].trim().toLowerCase() === "dob"
       );
