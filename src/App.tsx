@@ -87,10 +87,14 @@ export const App: React.FC = () => {
           align="center"
           sx={!nextCard?.eventName ? { marginTop: "80%" } : {}}
         >
-          {nextCard?.eventName || "Loading..."}
+          {nextCard?.eventName
+            ? nextCard?.eventName
+            : nextCard?.response.data.error
+            ? `Error: ${nextCard?.response.data.error}`
+            : "Loading..."}
         </Typography>
 
-        {nextCard && (
+        {nextCard?.eventName && (
           <TableContainer component={Paper} sx={{ width: "90vw" }}>
             <Table>
               <TableHead>

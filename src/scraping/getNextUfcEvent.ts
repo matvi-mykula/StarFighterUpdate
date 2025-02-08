@@ -8,7 +8,7 @@ export const getNextUfcEvent = async () => {
     return data; // Process and return the data as needed
   } catch (error) {
     console.error("Error fetching UFC data:", error);
-    return null;
+    return error;
   }
 };
 
