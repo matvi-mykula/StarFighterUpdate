@@ -1,4 +1,4 @@
 {
   "version": 2,
-  "rewrites": [{ "source": "/next-ufc-card", "destination": "/api/index.js" }]
+  "rewrites": [{ "source": "/next-ufc-card", "destination": "/api" }]
 }
