@@ -2,7 +2,7 @@ import axios from "axios";
 
 export const getNextUfcEvent = async () => {
   try {
-    const url = "http://localhost:5000/api/next-ufc-card"; // Call backend
+    const url = "/api/next-ufc-card"; // relative URL, Vercel will resolve this to your deployed API
     const { data } = await axios.get(url);
     console.log({ data }); // Check the fetched data
     return data; // Process and return the data as needed
