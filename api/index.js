@@ -9,7 +9,7 @@ const port = 5000;
 // Configure CORS so that your frontend at localhost:3000 can access the API
 const corsOptions = {
   origin:
-    process.env.NODE_ENV === "development" ? "http://localhost:3000" : "*",
+    process.env.NODE_ENV === "development" ? "http://localhost:5000" : "*",
   methods: "GET",
   allowedHeaders: "Content-Type",
 };
@@ -183,8 +183,12 @@ app.get("/next-ufc-card", async (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Server is running at ${port}`);
-});
+if (require.main === module) {
+  const localPort = process.env.PORT || 5000;
+
+  app.listen(localPort, () =>
+    console.log(`Server is running on port ${localPort}`)
+  );
+}
 
 module.exports = app;
