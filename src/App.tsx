@@ -89,8 +89,8 @@ export const App: React.FC = () => {
         >
           {nextCard?.eventName
             ? nextCard?.eventName
-            : nextCard?.response.data.error
-            ? `Error: ${nextCard?.response.data.error}`
+            : nextCard?.response?.data?.error
+            ? `Error: ${nextCard?.response?.data?.error}`
             : "Loading..."}
         </Typography>
 
