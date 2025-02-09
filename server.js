@@ -8,7 +8,8 @@ const port = 5000;
 
 // Configure CORS so that your frontend at localhost:3000 can access the API
 const corsOptions = {
-  origin: "http://localhost:3000",
+  origin:
+    process.env.NODE_ENV === "development" ? "http://localhost:3000" : "*",
   methods: "GET",
   allowedHeaders: "Content-Type",
 };
@@ -174,7 +175,8 @@ app.get("/api/next-ufc-card", async (req, res) => {
     }
 
     // Step 9: Return the event name, event details table HTML, and the matchup tables.
-    res.json({ eventName, matchups, birthDayData });
+    // res.json({ eventName, matchups, birthDayData });
+    res.status(200).json({ eventName, matchups, birthDayData });
   } catch (error) {
     console.error("Error fetching UFC data:", error);
     res.status(500).json({ error: "Failed to fetch UFC data" });

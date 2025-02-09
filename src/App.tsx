@@ -95,7 +95,10 @@ export const App: React.FC = () => {
         </Typography>
 
         {nextCard?.eventName && (
-          <TableContainer component={Paper} sx={{ width: "90vw" }}>
+          <TableContainer
+            component={Paper}
+            sx={{ width: "90vw", pointer: "crosshair" }}
+          >
             <Table>
               <TableHead>
                 <TableRow sx={{ backgroundColor: theme.palette.primary.main }}>
