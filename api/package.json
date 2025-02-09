@@ -1,0 +1,6 @@
+{
+  "scripts": {
+    "postinstall": "cd ../api && npm install && npm run build",
+    "start": "node index.js"
+  }
+}
