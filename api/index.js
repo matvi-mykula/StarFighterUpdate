@@ -8,8 +8,8 @@ const port = 5000;
 
 // Configure CORS so that your frontend at localhost:3000 can access the API
 const corsOptions = {
-  origin:
-    process.env.NODE_ENV === "development" ? "http://localhost:5000" : "*",
+  origin: "*",
+  // process.env.NODE_ENV === "development" ? "http://localhost:5000" : "*",
   methods: "GET",
   allowedHeaders: "Content-Type",
 };
