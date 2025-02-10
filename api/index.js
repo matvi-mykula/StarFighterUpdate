@@ -15,7 +15,7 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-app.get("/", async (req, res) => {
+app.get("/next", async (req, res) => {
   try {
     // Step 1: Fetch the upcoming events page from UFCStats
     const upcomingUrl = "http://www.ufcstats.com/statistics/events/upcoming";
