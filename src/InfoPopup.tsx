@@ -31,13 +31,22 @@ const InfoPopup = () => {
           <br />
           <DialogContentText sx={{ textAlign: "center" }}>
             <Link
-              // need link
+              href="https://github.com/matvi-mykula/StarFighterUpdate"
+              target="_blank"
+              rel="noopener noreferrer"
               sx={{
-                color: theme.palette.secondary.main,
                 cursor: "crosshair",
+                color: theme.palette.secondary.main,
+                textDecoration: "none",
+                fontWeight: "bold",
+                fontSize: "1rem",
+                transition: "color 0.2s ease-in-out",
+                "&:hover": {
+                  textDecoration: "underline",
+                },
               }}
             >
-              -- Github --
+              -- GitHub --
             </Link>
           </DialogContentText>
         </DialogContent>
