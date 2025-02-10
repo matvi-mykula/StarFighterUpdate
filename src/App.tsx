@@ -85,7 +85,11 @@ export const App: React.FC = () => {
           variant="h4"
           gutterBottom
           align="center"
-          sx={!nextCard?.eventName ? { marginTop: "80%" } : {}}
+          sx={
+            !nextCard?.eventName
+              ? { marginTop: "80%" }
+              : { marginBottom: "3rem" }
+          }
         >
           {nextCard?.eventName
             ? nextCard?.eventName
@@ -97,7 +101,7 @@ export const App: React.FC = () => {
         {nextCard?.eventName && (
           <TableContainer
             component={Paper}
-            sx={{ width: "90vw", pointer: "crosshair" }}
+            sx={{ width: "100%", pointer: "crosshair" }}
           >
             <Table>
               <TableHead>
