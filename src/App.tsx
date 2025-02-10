@@ -103,7 +103,7 @@ export const App: React.FC = () => {
             component={Paper}
             sx={{ width: "100%", pointer: "crosshair" }}
           >
-            <Table>
+            <Table sx={{ width: "100%", pointer: "crosshair" }}>
               <TableHead>
                 <TableRow sx={{ backgroundColor: theme.palette.primary.main }}>
                   <TableCell
