@@ -1,9 +1,1 @@
-{
-  "version": 2,
-  "rewrites": [
-    {
-      "source": "/next-ufc-card",
-      "destination": "/api/next-ufc-card"
-    }
-  ]
-}
+{ "version": 2, "rewrites": [{ "source": "/(.*)", "destination": "/api" }] }

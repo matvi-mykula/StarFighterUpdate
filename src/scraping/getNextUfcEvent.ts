@@ -5,8 +5,8 @@ export const getNextUfcEvent = async () => {
     const baseUrl =
       process.env.NODE_ENV === "production"
         ? "" // relative path when deployed on Vercel (same domain)
-        : "http://localhost:5000";
-    const url = `${baseUrl}/next-ufc-card`;
+        : "http://localhost:3000";
+    const url = `${baseUrl}/`;
     console.log({ url });
     const { data } = await axios.get(url);
     console.log({ data }); // Check the fetched data

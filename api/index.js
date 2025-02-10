@@ -183,14 +183,12 @@ app.get("/", async (req, res) => {
   }
 });
 
-if (require.main === module) {
-  const localPort = process.env.PORT || 5000;
+// if (require.main === module) {
+//   const localPort = process.env.PORT || 5000;
 
-  app.listen(localPort, () =>
-    console.log(`Server is running on port ${localPort}`)
-  );
-}
+//   app.listen(localPort, () =>
+//     console.log(`Server is running on port ${localPort}`)
+//   );
+// }
 
-module.exports = (req, res) => {
-  return app(req, res);
-};
+module.exports = app;
