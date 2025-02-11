@@ -53,10 +53,11 @@ const InfoPopup = () => {
       </Dialog>
       <Star
         sx={{
+          size: "large",
           cursor: "crosshair",
           position: "absolute",
-          top: "25px",
-          left: "25px",
+          bottom: "25px",
+          right: "25px",
         }}
         onClick={() => {
           setInfoOpen((prev) => !prev);

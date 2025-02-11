@@ -11,14 +11,9 @@ import {
   TableRow,
   Paper,
   Typography,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  Link,
+  Box,
 } from "@mui/material";
 import ExpandingRow from "./ExpandedRow";
-import { Info, Star } from "@mui/icons-material";
 import InfoPopup from "./InfoPopup";
 
 // Create a deep blue indigo theme
@@ -66,16 +61,18 @@ export const App: React.FC = () => {
     color: theme.palette.text.primary,
     textAlign: "center",
     fontWeight: "bold",
+    size: "small",
+    padding: "4px",
   };
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <div
-        style={{
-          padding: "20px",
+      <Box
+        sx={{
           backgroundColor: theme.palette.background.default,
           minHeight: "100vh",
+          maxWidth: "100vw",
           justifySelf: "center",
         }}
       >
@@ -85,11 +82,11 @@ export const App: React.FC = () => {
           variant="h4"
           gutterBottom
           align="center"
-          sx={
-            !nextCard?.eventName
-              ? { marginTop: "80%" }
-              : { marginBottom: "3rem" }
-          }
+          sx={{
+            fontSize: { xs: "1.2rem", sm: "1.5rem" },
+            marginTop: "4rem",
+            marginBottom: nextCard?.eventName ? "2rem" : "80%",
+          }}
         >
           {nextCard?.eventName
             ? nextCard?.eventName
@@ -101,9 +98,9 @@ export const App: React.FC = () => {
         {nextCard?.eventName && (
           <TableContainer
             component={Paper}
-            sx={{ width: "100%", pointer: "crosshair" }}
+            sx={{ maxWidth: "100%", pointer: "crosshair" }}
           >
-            <Table sx={{ width: "100%", pointer: "crosshair" }}>
+            <Table size="small">
               <TableHead>
                 <TableRow sx={{ backgroundColor: theme.palette.primary.main }}>
                   <TableCell
@@ -152,7 +149,7 @@ export const App: React.FC = () => {
             </Table>
           </TableContainer>
         )}
-      </div>
+      </Box>
     </ThemeProvider>
   );
 };
