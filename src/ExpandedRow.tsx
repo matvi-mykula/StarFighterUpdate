@@ -11,6 +11,8 @@ import {
 } from "@mui/material";
 import React from "react";
 import { getSignWithEmoji } from "./scraping/getNextUfcEvent";
+import getMarsSignApprox from "./scraping/getMarsSignApprox";
+import getMarsSign from "./scraping/getMarsSignApprox";
 
 const ExpandingRow = ({
   matchup,
@@ -46,6 +48,9 @@ const ExpandingRow = ({
             : "inherit",
         }}
       >
+        {/* <TableCell sx={{ textAlign: "center" }}>
+          {getMarsSign(birthDates[0].birthDate)}
+        </TableCell> */}
         {/* Fighter 1's Sign */}
         <TableCell sx={{ textAlign: "center" }}>
           {getSignWithEmoji(birthDates[0].birthDate)}
@@ -61,6 +66,9 @@ const ExpandingRow = ({
         <TableCell sx={{ textAlign: "center" }}>
           {getSignWithEmoji(birthDates[1].birthDate)}
         </TableCell>
+        {/* <TableCell sx={{ textAlign: "center" }}>
+          {getMarsSign(birthDates[1].birthDate)}
+        </TableCell> */}
       </TableRow>
 
       {/* Expanding Row */}

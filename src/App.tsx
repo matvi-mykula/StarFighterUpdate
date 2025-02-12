@@ -43,10 +43,15 @@ const theme = createTheme({
   },
 });
 
+// todo
+// display date
+// ensure that while an event is happening the info for that event is shown
+//    try switching to http://www.ufcstats.com/statistics/events/completed
+// calc mars sign info and display nicely
+
 export const App: React.FC = () => {
   const [nextCard, setNextCard] = useState<any>(null); // State to store event data
   const [expandedRow, setExpandedRow] = useState<number | null>(null); // State to track the expanded row
-
   // Fetch the next UFC event on mount
   useEffect(() => {
     const fetchNextEvent = async () => {
@@ -77,14 +82,22 @@ export const App: React.FC = () => {
         }}
       >
         <InfoPopup />
-
+        <Typography
+          align="center"
+          sx={{
+            fontSize: { xs: "1.2rem", sm: "1.5rem" },
+            marginTop: "4rem",
+          }}
+        >
+          {nextCard?.eventDate}
+        </Typography>
         <Typography
           variant="h4"
           gutterBottom
           align="center"
           sx={{
             fontSize: { xs: "1.2rem", sm: "1.5rem" },
-            marginTop: "4rem",
+            marginTop: "2rem",
             marginBottom: nextCard?.eventName ? "2rem" : "80%",
           }}
         >
@@ -103,6 +116,13 @@ export const App: React.FC = () => {
             <Table size="small">
               <TableHead>
                 <TableRow sx={{ backgroundColor: theme.palette.primary.main }}>
+                  <TableCell
+                    sx={{
+                      ...cellStyle,
+                    }}
+                  >
+                    Mars Sign
+                  </TableCell>
                   <TableCell
                     sx={{
                       ...cellStyle,
@@ -130,6 +150,13 @@ export const App: React.FC = () => {
                     }}
                   >
                     Star Sign
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      ...cellStyle,
+                    }}
+                  >
+                    Mars Sign
                   </TableCell>
                 </TableRow>
               </TableHead>

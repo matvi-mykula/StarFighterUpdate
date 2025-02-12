@@ -44,6 +44,8 @@ app.get("/next", async (req, res) => {
       console.log("Event name or link not found.");
       return res.status(404).json({ error: "Event name or link not found" });
     }
+    const eventDate = eventRow.find(".b-statistics__date").text().trim();
+    console.log({ eventDate });
 
     // If the link is relative, prepend the base URL
     if (!eventLink.startsWith("http")) {
@@ -176,7 +178,7 @@ app.get("/next", async (req, res) => {
 
     // Step 9: Return the event name, event details table HTML, and the matchup tables.
     // res.json({ eventName, matchups, birthDayData });
-    res.status(200).json({ eventName, matchups, birthDayData });
+    res.status(200).json({ eventName, matchups, birthDayData, eventDate });
   } catch (error) {
     console.error("Error fetching UFC data:", error);
     res.status(500).json({ error: "Failed to fetch UFC data" });
