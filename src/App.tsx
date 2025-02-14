@@ -116,13 +116,13 @@ export const App: React.FC = () => {
             <Table size="small">
               <TableHead>
                 <TableRow sx={{ backgroundColor: theme.palette.primary.main }}>
-                  <TableCell
+                  {/* <TableCell
                     sx={{
                       ...cellStyle,
                     }}
                   >
                     Mars Sign
-                  </TableCell>
+                  </TableCell> */}
                   <TableCell
                     sx={{
                       ...cellStyle,
@@ -151,13 +151,13 @@ export const App: React.FC = () => {
                   >
                     Star Sign
                   </TableCell>
-                  <TableCell
+                  {/* <TableCell
                     sx={{
                       ...cellStyle,
                     }}
                   >
                     Mars Sign
-                  </TableCell>
+                  </TableCell> */}
                 </TableRow>
               </TableHead>
               <TableBody>
