@@ -18,7 +18,7 @@ app.use(cors(corsOptions));
 app.get("/next", async (req, res) => {
   try {
     // Step 1: Fetch the upcoming events page from UFCStats
-    const upcomingUrl = "http://www.ufcstats.com/statistics/events/upcoming";
+    const upcomingUrl = "http://www.ufcstats.com/statistics/events/completed";
     console.log(`Fetching upcoming events from: ${upcomingUrl}`);
     const { data: upcomingData } = await axios.get(upcomingUrl, {
       headers: {
