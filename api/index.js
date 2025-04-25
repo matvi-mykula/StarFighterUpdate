@@ -17,11 +17,10 @@ app.use(cors(corsOptions));
 
 app.get("/next", async (req, res) => {
   // Step 1: Fetch the upcoming events page from UFCStats
-  const upcomingUrl = "http://www.ufcstats.com/statistics/events/completed";
   try {
     /* 1. fetch the page — use https and add full browser headers so Cloudflare
          or ModSecurity doesn’t block the request                        */
-    const url = "https://www.ufcstats.com/statistics/events/completed";
+    const url = "http://www.ufcstats.com/statistics/events/completed";
     const { data: html } = await axios.get(url, {
       timeout: 10_000,
       headers: {
@@ -53,7 +52,10 @@ app.get("/next", async (req, res) => {
     const eventDate = row.find(".b-statistics__date").text().trim();
     const location = row.children("td").last().text().trim();
     // Note: The first row(s) might be header(s). Typically, the first non-header row is at index 1.
-    const eventRow = $upcoming(".b-statistics__table-row").eq(2);
+    // const eventRow = $upcoming(".b-statistics__table-row").eq(2);
+    const eventRow = $(
+      "table.b-statistics__table-events tr.b-statistics__table-row_type_first"
+    ).first();
     if (!eventRow || !eventRow.html()) {
       console.log("No event row found.");
       return res.status(404).json({ error: "No upcoming event found" });
@@ -203,12 +205,12 @@ app.get("/next", async (req, res) => {
   }
 });
 
-// if (require.main === module) {
-//   const localPort = process.env.PORT || 5000;
+if (require.main === module) {
+  const localPort = process.env.PORT || 5000;
 
-//   app.listen(localPort, () =>
-//     console.log(`Server is running on port ${localPort}`)
-//   );
-// }
+  app.listen(localPort, () =>
+    console.log(`Server is running on port ${localPort}`)
+  );
+}
 
 module.exports = app;
