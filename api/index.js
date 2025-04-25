@@ -16,19 +16,42 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 app.get("/next", async (req, res) => {
+  // Step 1: Fetch the upcoming events page from UFCStats
+  const upcomingUrl = "http://www.ufcstats.com/statistics/events/completed";
   try {
-    // Step 1: Fetch the upcoming events page from UFCStats
-    const upcomingUrl = "http://www.ufcstats.com/statistics/events/completed";
-    console.log(`Fetching upcoming events from: ${upcomingUrl}`);
-    const { data: upcomingData } = await axios.get(upcomingUrl, {
+    /* 1. fetch the page — use https and add full browser headers so Cloudflare
+         or ModSecurity doesn’t block the request                        */
+    const url = "https://www.ufcstats.com/statistics/events/completed";
+    const { data: html } = await axios.get(url, {
+      timeout: 10_000,
       headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)", // Mimic a browser
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0",
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
       },
+      maxRedirects: 5,
     });
 
-    // Step 2: Load the HTML using Cheerio
-    const $upcoming = cheerio.load(upcomingData);
+    /* 2. parse the DOM */
+    const $ = cheerio.load(html);
 
+    /* 3. grab the first *real* row (it’s marked with its own class) */
+    const row = $(
+      "table.b-statistics__table-events tr.b-statistics__table-row_type_first"
+    ).first();
+
+    if (!row.length) {
+      return res.status(404).json({ error: "Table row not found" });
+    }
+
+    /* 4. extract the bits we need */
+    const anchor = row.find("a").first();
+    const eventName = anchor.text().trim();
+    const eventLink = anchor.attr("href");
+    const eventDate = row.find(".b-statistics__date").text().trim();
+    const location = row.children("td").last().text().trim();
     // Note: The first row(s) might be header(s). Typically, the first non-header row is at index 1.
     const eventRow = $upcoming(".b-statistics__table-row").eq(2);
     if (!eventRow || !eventRow.html()) {
@@ -36,16 +59,11 @@ app.get("/next", async (req, res) => {
       return res.status(404).json({ error: "No upcoming event found" });
     }
 
-    // Step 3: Extract the event name and link from the row
-    const eventName = eventRow.find("a").text().trim();
-    let eventLink = eventRow.find("a").attr("href");
     if (!eventName || !eventLink) {
       console.log({ eventRow });
       console.log("Event name or link not found.");
       return res.status(404).json({ error: "Event name or link not found" });
     }
-    const eventDate = eventRow.find(".b-statistics__date").text().trim();
-    console.log({ eventDate });
 
     // If the link is relative, prepend the base URL
     if (!eventLink.startsWith("http")) {
