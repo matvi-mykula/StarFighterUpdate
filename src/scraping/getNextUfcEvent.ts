@@ -4,7 +4,7 @@ export const getNextUfcEvent = async () => {
   try {
     const baseUrl =
       process.env.NODE_ENV === "production"
-        ? "" // relative path when deployed on Vercel (same domain)
+        ? "/api" // Vercel API functions live under /api
         : "http://localhost:3000";
     const url = `${baseUrl}/next`;
     console.log({ url });
