@@ -107,174 +107,329 @@ const fetchUfcStatsPage = async (url) => {
   return response.data;
 };
 
-app.get("/next", async (req, res) => {
-  // Step 1: Fetch the upcoming events page from UFCStats
-  try {
-    /* 1. fetch the page — use https and add full browser headers so Cloudflare
-         or ModSecurity doesn’t block the request                        */
-    const url = `${UFC_STATS_BASE_URL}/statistics/events/completed`;
-    const html = await fetchUfcStatsPage(url);
+const EVENT_TIME_ZONE = "America/Chicago";
+const EVENT_CARD_RETENTION_DAYS_AFTER = 1;
 
-    /* 2. parse the DOM */
-    const $ = cheerio.load(html);
+const monthsByName = {
+  january: "01",
+  february: "02",
+  march: "03",
+  april: "04",
+  may: "05",
+  june: "06",
+  july: "07",
+  august: "08",
+  september: "09",
+  october: "10",
+  november: "11",
+  december: "12",
+};
 
-    /* 3. grab the first *real* row (it’s marked with its own class) */
-    const row = $(
-      "table.b-statistics__table-events tr.b-statistics__table-row_type_first"
-    ).first();
+const parseEventDateKey = (dateText) => {
+  const match = dateText.match(/^([A-Za-z]+)\s+(\d{1,2}),\s+(\d{4})$/);
+  if (!match) {
+    return null;
+  }
 
-    if (!row.length) {
-      return res.status(404).json({ error: "Table row not found" });
-    }
+  const [, monthName, day, year] = match;
+  const month = monthsByName[monthName.toLowerCase()];
+  if (!month) {
+    return null;
+  }
 
-    /* 4. extract the bits we need */
-    const anchor = row.find("a").first();
-    const eventName = anchor.text().trim();
-    let eventLink = anchor.attr("href");
-    const eventDate = row.find(".b-statistics__date").text().trim();
-    const location = row.children("td").last().text().trim();
-    // Note: The first row(s) might be header(s). Typically, the first non-header row is at index 1.
-    // const eventRow = $upcoming(".b-statistics__table-row").eq(2);
-    const eventRow = $(
-      "table.b-statistics__table-events tr.b-statistics__table-row_type_first"
-    ).first();
-    if (!eventRow || !eventRow.html()) {
-      console.log("No event row found.");
-      return res.status(404).json({ error: "No upcoming event found" });
-    }
+  return `${year}-${month}-${day.padStart(2, "0")}`;
+};
 
-    if (!eventName || !eventLink) {
-      console.log({ eventRow });
-      console.log("Event name or link not found.");
-      return res.status(404).json({ error: "Event name or link not found" });
-    }
+const getEventTimeZoneDateKey = (dayOffset = 0) => {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: EVENT_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
 
-    // If the link is relative, prepend the base URL
-    if (!eventLink.startsWith("http")) {
-      eventLink = UFC_STATS_BASE_URL + eventLink;
-    }
-    console.log(`Found event: ${eventName}`);
-    console.log(`Event link: ${eventLink}`);
+  const values = Object.fromEntries(
+    parts.map((part) => [part.type, part.value])
+  );
+  const eventDate = new Date(
+    Date.UTC(
+      Number(values.year),
+      Number(values.month) - 1,
+      Number(values.day) + dayOffset
+    )
+  );
 
-    // Step 4: Fetch the event details page using the event link
-    console.log(`Fetching event details from: ${eventLink}`);
-    const eventDetailsData = await fetchUfcStatsPage(eventLink);
+  const year = eventDate.getUTCFullYear();
+  const month = String(eventDate.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(eventDate.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 
-    // Step 5: Load the event details page and extract the event details table
-    const $details = cheerio.load(eventDetailsData);
+const getEventCandidates = ($) =>
+  $("table.b-statistics__table-events tr")
+    .toArray()
+    .map((row) => {
+      const element = $(row);
+      const anchor = element.find("a").first();
+      const eventName = anchor.text().trim();
+      const eventLink = anchor.attr("href");
+      const eventDate = element.find(".b-statistics__date").text().trim();
+      const eventDateKey = parseEventDateKey(eventDate);
 
-    // Step 5: Locate the table with fight details.
-    // (Adjust the selector to match the actual table on the event details page.)
-    const eventTable = $details(".b-fight-details__table");
-    if (!eventTable || eventTable.length === 0) {
-      console.log("Event details table not found.");
-      return res.status(404).json({ error: "Event details table not found" });
-    }
-
-    // Step 6: For each row in the event details table, find and process the "View Matchup" button.
-    // We'll assume that each row that has a matchup button contains an <a> with text "View Matchup".
-    // (Adjust the selector if needed.)
-    const viewMatchupButtons = $details("a, button")
-      .filter((i, el) => $details(el).text().trim() === "View Matchup")
-      .toArray();
-
-    console.log(`Found ${viewMatchupButtons.length} "View Matchup" buttons.`);
-
-    if (viewMatchupButtons.length > 0) {
-      // Log the attributes of the first element for debugging
-      const firstElementAttrs = $details(viewMatchupButtons[0]).attr();
-      console.log(
-        "Attributes of first 'View Matchup' element:",
-        firstElementAttrs
-      );
-    }
-
-    const matchupLinks = viewMatchupButtons
-      .map((el) => {
-        // Try to extract the URL from either href or data-link
-        let link = $details(el).attr("href") || $details(el).attr("data-link");
-        if (link && !link.startsWith("http")) {
-          link = UFC_STATS_BASE_URL + link;
-        }
-        return link;
-      })
-      .filter(Boolean);
-
-    const firstFourMatchupLinks = matchupLinks.slice(0, 4);
-
-    // Step 7: Fetch each matchup page concurrently.
-    const matchupPages = await Promise.all(
-      firstFourMatchupLinks.map((link) => fetchUfcStatsPage(link))
-    );
-
-    // Step 8: For each matchup page, extract the matchup table and convert it to a structured object.
-    const matchups = matchupPages.map((html, index) => {
-      const $matchup = cheerio.load(html);
-
-      // Find all tables on the page
-      const tables = $matchup("table");
-
-      if (tables.length === 0) {
-        console.log(`No tables found on page ${index + 1}`);
-        return { error: "No table found" };
+      if (!eventName || !eventLink || !eventDateKey) {
+        return null;
       }
 
-      // Look for the first table that has more than one row
-      let tableToUse = null;
-      tables.each((i, table) => {
-        const rowCount = $matchup(table).find("tr").length;
-        if (rowCount > 1 && !tableToUse) {
-          tableToUse = table;
+      return {
+        eventName,
+        eventLink,
+        eventDate,
+        eventDateKey,
+        location: element.children("td").last().text().trim(),
+      };
+    })
+    .filter(Boolean);
+
+const selectCurrentOrNextEvent = (candidates) => {
+  const oldestVisibleEventDateKey = getEventTimeZoneDateKey(
+    -EVENT_CARD_RETENTION_DAYS_AFTER
+  );
+  const uniqueCandidates = new Map();
+
+  candidates.forEach((candidate) => {
+    const key = candidate.eventLink;
+    if (!uniqueCandidates.has(key)) {
+      uniqueCandidates.set(key, candidate);
+    }
+  });
+
+  return [...uniqueCandidates.values()]
+    // Keep the current card visible for the full day after the event.
+    .filter((candidate) => candidate.eventDateKey >= oldestVisibleEventDateKey)
+    .sort((a, b) => a.eventDateKey.localeCompare(b.eventDateKey))[0];
+};
+
+const getFighterProfile = async (fighterLink) => {
+  const html = await fetchUfcStatsPage(fighterLink);
+  const $ = cheerio.load(html);
+  const stats = {};
+
+  $("li.b-list__box-list-item").each((i, item) => {
+    const text = $(item).text().replace(/\s+/g, " ").trim();
+    const [label, ...valueParts] = text.split(":");
+    if (label && valueParts.length) {
+      stats[label.trim()] = valueParts.join(":").trim();
+    }
+  });
+
+  return {
+    name: $(".b-content__title-highlight").text().trim(),
+    stats,
+  };
+};
+
+const buildCompletedMatchupTable = async (fighterLinks) => {
+  const [fighter1, fighter2] = await Promise.all(
+    fighterLinks.map((link) => getFighterProfile(link))
+  );
+
+  return [
+    ["", fighter1.name, fighter2.name],
+    ["Tale of the tape"],
+    ["Wins/Losses/Draws", "", ""],
+    ["Height", fighter1.stats.Height || "", fighter2.stats.Height || ""],
+    ["Weight", fighter1.stats.Weight || "", fighter2.stats.Weight || ""],
+    ["Reach", fighter1.stats.Reach || "", fighter2.stats.Reach || ""],
+    ["Stance", fighter1.stats.STANCE || "", fighter2.stats.STANCE || ""],
+    ["DOB", fighter1.stats.DOB || "", fighter2.stats.DOB || ""],
+    ["Striking (Significant Strikes)"],
+    [
+      "Strikes Landed per Min. (SLpM)",
+      fighter1.stats.SLpM || "",
+      fighter2.stats.SLpM || "",
+    ],
+    [
+      "Striking Accuracy",
+      fighter1.stats["Str. Acc."] || "",
+      fighter2.stats["Str. Acc."] || "",
+    ],
+    [
+      "Strikes Absorbed per Min. (SApM)",
+      fighter1.stats.SApM || "",
+      fighter2.stats.SApM || "",
+    ],
+    [
+      "Takedowns Average/15 min.",
+      fighter1.stats["TD Avg."] || "",
+      fighter2.stats["TD Avg."] || "",
+    ],
+    ["Most recent fights", "", ""],
+  ];
+};
+
+const getCompletedEventMatchups = async ($details) => {
+  const completedFightRows = $details("tr.b-fight-details__table-row")
+    .toArray()
+    .map((row) =>
+      $details(row)
+        .find('a[href*="/fighter-details/"]')
+        .toArray()
+        .map((anchor) => $details(anchor).attr("href"))
+        .filter(Boolean)
+    )
+    .filter((fighterLinks) => fighterLinks.length >= 2)
+    .slice(0, 4);
+
+  return Promise.all(
+    completedFightRows.map((fighterLinks) =>
+      buildCompletedMatchupTable(fighterLinks.slice(0, 2))
+    )
+  );
+};
+
+const normalizeUfcStatsLink = (link) => {
+  if (!link) {
+    return null;
+  }
+
+  return link.startsWith("http") ? link : `${UFC_STATS_BASE_URL}${link}`;
+};
+
+const getMatchupsForEvent = async (eventLink) => {
+  console.log(`Fetching event details from: ${eventLink}`);
+  const eventDetailsData = await fetchUfcStatsPage(eventLink);
+  const $details = cheerio.load(eventDetailsData);
+  const eventTable = $details(".b-fight-details__table");
+
+  if (!eventTable || eventTable.length === 0) {
+    console.log("Event details table not found.");
+    const error = new Error("Event details table not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const viewMatchupButtons = $details("a, button")
+    .filter((i, el) => $details(el).text().trim() === "View Matchup")
+    .toArray();
+
+  console.log(`Found ${viewMatchupButtons.length} "View Matchup" buttons.`);
+
+  if (!viewMatchupButtons.length) {
+    return getCompletedEventMatchups($details);
+  }
+
+  const matchupLinks = viewMatchupButtons
+    .map((el) =>
+      normalizeUfcStatsLink(
+        $details(el).attr("href") || $details(el).attr("data-link")
+      )
+    )
+    .filter(Boolean)
+    .slice(0, 4);
+
+  const matchupPages = await Promise.all(
+    matchupLinks.map((link) => fetchUfcStatsPage(link))
+  );
+
+  return matchupPages.map((html, index) => {
+    const $matchup = cheerio.load(html);
+    const tables = $matchup("table");
+
+    if (tables.length === 0) {
+      console.log(`No tables found on page ${index + 1}`);
+      return { error: "No table found" };
+    }
+
+    let tableToUse = null;
+    tables.each((i, table) => {
+      const rowCount = $matchup(table).find("tr").length;
+      if (rowCount > 1 && !tableToUse) {
+        tableToUse = table;
+      }
+    });
+
+    if (!tableToUse) {
+      console.log(`No suitable table found on page ${index + 1}`);
+      return { error: "No suitable table found" };
+    }
+
+    const rows = [];
+    $matchup(tableToUse)
+      .find("tr")
+      .each((i, row) => {
+        const rowData = [];
+        $matchup(row)
+          .find("th, td")
+          .each((j, cell) => {
+            rowData.push($matchup(cell).text().trim());
+          });
+        if (rowData.length) {
+          rows.push(rowData);
         }
       });
 
-      if (!tableToUse) {
-        console.log(`No suitable table found on page ${index + 1}`);
-        return { error: "No suitable table found" };
-      }
+    return rows;
+  });
+};
 
-      // Convert the selected table to an array of rows
-      const rows = [];
-      $matchup(tableToUse)
-        .find("tr")
-        .each((i, row) => {
-          const rowData = [];
-          // Consider both table headers and table cells
-          $matchup(row)
-            .find("th, td")
-            .each((j, cell) => {
-              rowData.push($matchup(cell).text().trim());
-            });
-          if (rowData.length) {
-            rows.push(rowData);
-          }
-        });
+const getBirthDayData = (matchups) =>
+  matchups.map((matchupTable) => {
+    const rows = Array.isArray(matchupTable) ? matchupTable : [["", "", ""]];
+    const dobRow =
+      rows.find((row) => row[0].trim().toLowerCase() === "dob") || [];
 
-      return rows;
-    });
+    return [
+      { name: rows[0][1], birthDate: dobRow[1] },
+      { name: rows[0][2], birthDate: dobRow[2] },
+    ];
+  });
 
-    const birthDayData = [];
+app.get("/next", async (req, res) => {
+  try {
+    const completedUrl = `${UFC_STATS_BASE_URL}/statistics/events/completed`;
+    const upcomingUrl = `${UFC_STATS_BASE_URL}/statistics/events/upcoming`;
+    const [completedHtml, upcomingHtml] = await Promise.all([
+      fetchUfcStatsPage(completedUrl),
+      fetchUfcStatsPage(upcomingUrl),
+    ]);
 
-    for (let i = 0; i < 4; i++) {
-      // Looping through the first 4 fights to get main card
-      const matchupTable = matchups[i]; // Get the DOB row for the current fight
-      const dobRow = matchupTable.find(
-        (row) => row[0].trim().toLowerCase() === "dob"
-      );
+    const selectedEvent = selectCurrentOrNextEvent([
+      ...getEventCandidates(cheerio.load(completedHtml)),
+      ...getEventCandidates(cheerio.load(upcomingHtml)),
+    ]);
 
-      birthDayData[i] = [
-        { name: matchupTable[0][1], birthDate: dobRow[1] },
-        { name: matchupTable[0][2], birthDate: dobRow[2] },
-      ];
+    if (!selectedEvent) {
+      return res
+        .status(404)
+        .json({ error: "No current or upcoming event found" });
     }
 
-    // Step 9: Return the event name, event details table HTML, and the matchup tables.
-    // res.json({ eventName, matchups, birthDayData });
-    res.status(200).json({ eventName, matchups, birthDayData, eventDate });
+    const eventLink = normalizeUfcStatsLink(selectedEvent.eventLink);
+    console.log(`Found event: ${selectedEvent.eventName}`);
+    console.log(`Event link: ${eventLink}`);
+
+    const matchups = await getMatchupsForEvent(eventLink);
+    const birthDayData = getBirthDayData(matchups);
+
+    res.status(200).json({
+      eventName: selectedEvent.eventName,
+      matchups,
+      birthDayData,
+      eventDate: selectedEvent.eventDate,
+    });
   } catch (error) {
     console.error("Error fetching UFC data:", error);
-    res.status(500).json({ error: "Failed to fetch UFC data" });
+    res
+      .status(error.statusCode || 500)
+      .json({
+        error: error.statusCode ? error.message : "Failed to fetch UFC data",
+      });
   }
+});
+
+app.get("/api/next", (req, res) => {
+  req.url = "/next";
+  return app(req, res);
 });
 
 if (require.main === module) {
