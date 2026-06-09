@@ -20,6 +20,11 @@ import {
 } from "@mui/material";
 import ExpandingRow from "./ExpandedRow";
 import InfoPopup from "./InfoPopup";
+import BirthChartComparisonModal from "./BirthChartComparisonModal";
+import {
+  BirthChartComparison,
+  getBirthChartComparison,
+} from "./scraping/getBirthChartComparison";
 
 const theme = createTheme({
   palette: {
@@ -62,6 +67,11 @@ export const App: React.FC = () => {
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [birthChartModalOpen, setBirthChartModalOpen] = useState(false);
+  const [birthChartLoading, setBirthChartLoading] = useState(false);
+  const [birthChartError, setBirthChartError] = useState<string | null>(null);
+  const [birthChartComparison, setBirthChartComparison] =
+    useState<BirthChartComparison | null>(null);
 
   const fetchNextEvent = async () => {
     setLoading(true);
@@ -84,6 +94,28 @@ export const App: React.FC = () => {
   useEffect(() => {
     fetchNextEvent();
   }, []);
+
+  const handleCompareBirthCharts = async (
+    fighters: Array<{ name: string; birthDate: string }>
+  ) => {
+    setBirthChartModalOpen(true);
+    setBirthChartLoading(true);
+    setBirthChartError(null);
+    setBirthChartComparison(null);
+
+    try {
+      const comparison = await getBirthChartComparison(fighters);
+      setBirthChartComparison(comparison);
+    } catch (error) {
+      setBirthChartError(
+        error instanceof Error
+          ? error.message
+          : "Unable to compare birth charts"
+      );
+    } finally {
+      setBirthChartLoading(false);
+    }
+  };
 
   const cellStyle = {
     color: theme.palette.text.primary,
@@ -296,6 +328,28 @@ export const App: React.FC = () => {
                       handleToggle={() =>
                         setExpandedRow(expandedRow === index ? null : index)
                       }
+                      onCompareBirthCharts={() =>
+                        handleCompareBirthCharts([
+                          {
+                            name:
+                              nextCard.birthDayData[index]?.[0]?.name ||
+                              matchup[0]?.[1] ||
+                              "Fighter 1",
+                            birthDate:
+                              nextCard.birthDayData[index]?.[0]?.birthDate ||
+                              "",
+                          },
+                          {
+                            name:
+                              nextCard.birthDayData[index]?.[1]?.name ||
+                              matchup[0]?.[2] ||
+                              "Fighter 2",
+                            birthDate:
+                              nextCard.birthDayData[index]?.[1]?.birthDate ||
+                              "",
+                          },
+                        ])
+                      }
                     />
                   ))}
                 </TableBody>
@@ -303,6 +357,13 @@ export const App: React.FC = () => {
             </TableContainer>
           )}
         </Box>
+        <BirthChartComparisonModal
+          open={birthChartModalOpen}
+          onClose={() => setBirthChartModalOpen(false)}
+          loading={birthChartLoading}
+          error={birthChartError}
+          comparison={birthChartComparison}
+        />
       </Box>
     </ThemeProvider>
   );

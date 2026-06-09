@@ -1,1 +1,10 @@
-{ "version": 2, "rewrites": [{ "source": "/next", "destination": "/api/next" }] }
+{
+  "version": 2,
+  "rewrites": [
+    { "source": "/next", "destination": "/api/next" },
+    {
+      "source": "/birthchart/compare",
+      "destination": "/api/birthchart/compare"
+    }
+  ]
+}

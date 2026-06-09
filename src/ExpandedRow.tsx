@@ -8,8 +8,14 @@ import {
   Paper,
   useTheme,
   IconButton,
+  Button,
+  Box,
 } from "@mui/material";
-import { KeyboardArrowDown, KeyboardArrowUp } from "@mui/icons-material";
+import {
+  CompareArrows,
+  KeyboardArrowDown,
+  KeyboardArrowUp,
+} from "@mui/icons-material";
 import React from "react";
 import { getSignWithEmoji } from "./scraping/getNextUfcEvent";
 
@@ -18,11 +24,13 @@ const ExpandingRow = ({
   expandedRow,
   handleToggle,
   birthDates,
+  onCompareBirthCharts,
 }: {
   matchup: string[][];
   expandedRow: boolean;
   handleToggle: () => void;
   birthDates: any;
+  onCompareBirthCharts: () => void;
 }) => {
   const theme = useTheme();
   const importantStats = [
@@ -176,6 +184,36 @@ const ExpandingRow = ({
                     ))}
                 </TableBody>
               </Table>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  px: 1,
+                  py: 1.25,
+                }}
+              >
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<CompareArrows fontSize="small" />}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onCompareBirthCharts();
+                  }}
+                  sx={{
+                    borderColor: "rgba(34,211,238,0.55)",
+                    color: "#cffafe",
+                    fontWeight: 800,
+                    textTransform: "none",
+                    "&:hover": {
+                      borderColor: "#22d3ee",
+                      backgroundColor: "rgba(34,211,238,0.12)",
+                    },
+                  }}
+                >
+                  Compare Birth Charts
+                </Button>
+              </Box>
             </TableContainer>
           </Collapse>
         </TableCell>

@@ -11,10 +11,11 @@ const port = 5000;
 const corsOptions = {
   origin: "*",
   // process.env.NODE_ENV === "development" ? "http://localhost:5000" : "*",
-  methods: "GET",
+  methods: "GET,POST",
   allowedHeaders: "Content-Type",
 };
 app.use(cors(corsOptions));
+app.use(express.json());
 
 const UFC_STATS_BASE_URL = "http://www.ufcstats.com";
 
@@ -109,6 +110,224 @@ const fetchUfcStatsPage = async (url) => {
 
 const EVENT_TIME_ZONE = "America/Chicago";
 const EVENT_CARD_RETENTION_DAYS_AFTER = 1;
+
+const Astronomy = require("astronomy-engine");
+
+const CALCULATION_MODE = "date_only_utc_day_range";
+const DATE_ONLY_WARNING =
+  "Birth time unknown; placements are shown as full-day UTC ranges. Houses, rising sign, and Midheaven are omitted.";
+
+const chartBodies = [
+  "Sun",
+  "Moon",
+  "Mercury",
+  "Venus",
+  "Mars",
+  "Jupiter",
+  "Saturn",
+  "Uranus",
+  "Neptune",
+  "Pluto",
+];
+
+const zodiacSigns = [
+  "Aries",
+  "Taurus",
+  "Gemini",
+  "Cancer",
+  "Leo",
+  "Virgo",
+  "Libra",
+  "Scorpio",
+  "Sagittarius",
+  "Capricorn",
+  "Aquarius",
+  "Pisces",
+];
+
+const aspectRules = [
+  { aspect: "conjunction", angle: 0, orb: 6, label: "activation" },
+  { aspect: "opposition", angle: 180, orb: 6, label: "polarity" },
+  { aspect: "square", angle: 90, orb: 6, label: "tension" },
+  { aspect: "trine", angle: 120, orb: 6, label: "flow" },
+  { aspect: "sextile", angle: 60, orb: 4, label: "support" },
+];
+
+const roundToTwo = (value) => Math.round(value * 100) / 100;
+
+const normalizeLongitude = (longitude) => ((longitude % 360) + 360) % 360;
+
+const longitudeToZodiac = (longitude) => {
+  const normalized = normalizeLongitude(longitude);
+  const signIndex = Math.floor(normalized / 30);
+
+  return {
+    sign: zodiacSigns[signIndex],
+    degree: roundToTwo(normalized - signIndex * 30),
+    longitude: roundToTwo(normalized),
+  };
+};
+
+const formatRange = (start, end, suffix = "") => {
+  if (start === end) {
+    return `${start}${suffix}`;
+  }
+
+  return `${start}${suffix} - ${end}${suffix}`;
+};
+
+const parseBirthDateRangeUtc = (birthDate) => {
+  if (!birthDate || typeof birthDate !== "string") {
+    return null;
+  }
+
+  const parsed = new Date(birthDate);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  const start = new Date(
+    Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate())
+  );
+  const end = new Date(
+    Date.UTC(
+      parsed.getUTCFullYear(),
+      parsed.getUTCMonth(),
+      parsed.getUTCDate(),
+      23,
+      59,
+      59,
+      999
+    )
+  );
+
+  return { start, end };
+};
+
+const getGeocentricLongitude = (planet, chartTimeUtc) => {
+  const body = Astronomy.Body[planet];
+  const vector = Astronomy.GeoVector(body, chartTimeUtc, true);
+  return Astronomy.Ecliptic(vector).elon;
+};
+
+const buildDateOnlyChart = (fighter = {}) => {
+  const name = fighter.name || "Unknown Fighter";
+  const birthDate = fighter.birthDate || "";
+  const warnings = [];
+  const birthDateRangeUtc = parseBirthDateRangeUtc(birthDate);
+
+  if (!birthDateRangeUtc) {
+    warnings.push(`Birth date unavailable or invalid for ${name}.`);
+    return {
+      name,
+      birthDate,
+      birthDateRangeUtc: null,
+      placements: [],
+      warnings,
+    };
+  }
+
+  const placements = chartBodies.map((planet) => {
+    const startLongitude = getGeocentricLongitude(planet, birthDateRangeUtc.start);
+    const endLongitude = getGeocentricLongitude(planet, birthDateRangeUtc.end);
+    const startZodiac = longitudeToZodiac(startLongitude);
+    const endZodiac = longitudeToZodiac(endLongitude);
+    const signs = [...new Set([startZodiac.sign, endZodiac.sign])];
+
+    return {
+      planet,
+      sign: signs.join(" / "),
+      signs,
+      degree: null,
+      degreeRange: formatRange(startZodiac.degree, endZodiac.degree, " deg"),
+      longitude: null,
+      longitudeRange: {
+        start: startZodiac.longitude,
+        end: endZodiac.longitude,
+      },
+    };
+  });
+
+  return {
+    name,
+    birthDate,
+    birthDateRangeUtc: {
+      start: birthDateRangeUtc.start.toISOString(),
+      end: birthDateRangeUtc.end.toISOString(),
+    },
+    placements,
+    warnings,
+  };
+};
+
+const angularDistance = (firstLongitude, secondLongitude) => {
+  const difference = Math.abs(
+    normalizeLongitude(firstLongitude) - normalizeLongitude(secondLongitude)
+  );
+  return difference > 180 ? 360 - difference : difference;
+};
+
+const findSynastryAspects = (firstChart, secondChart) => {
+  if (!firstChart.placements.length || !secondChart.placements.length) {
+    return [];
+  }
+
+  return firstChart.placements
+    .flatMap((firstPlacement) =>
+      secondChart.placements.flatMap((secondPlacement) => {
+        const distances = [
+          angularDistance(
+            firstPlacement.longitudeRange.start,
+            secondPlacement.longitudeRange.start
+          ),
+          angularDistance(
+            firstPlacement.longitudeRange.start,
+            secondPlacement.longitudeRange.end
+          ),
+          angularDistance(
+            firstPlacement.longitudeRange.end,
+            secondPlacement.longitudeRange.start
+          ),
+          angularDistance(
+            firstPlacement.longitudeRange.end,
+            secondPlacement.longitudeRange.end
+          ),
+        ];
+
+        return aspectRules
+          .map((rule) => ({
+            rule,
+            orbs: distances.map((distance) => Math.abs(distance - rule.angle)),
+          }))
+          .map(({ rule, orbs }) => {
+            const minOrb = Math.min(...orbs);
+            const maxOrb = Math.max(...orbs);
+
+            return {
+              rule,
+              minOrb,
+              maxOrb,
+            };
+          })
+          .filter(({ rule, minOrb }) => minOrb <= rule.orb)
+          .map(({ rule, minOrb, maxOrb }) => {
+            const roundedMinOrb = roundToTwo(minOrb);
+            const roundedMaxOrb = roundToTwo(maxOrb);
+
+            return {
+              fighterAPlanet: firstPlacement.planet,
+              fighterBPlanet: secondPlacement.planet,
+              aspect: rule.aspect,
+              orb: roundedMinOrb,
+              orbRange: formatRange(roundedMinOrb, roundedMaxOrb, " deg"),
+              label: rule.label,
+              certainty: maxOrb <= rule.orb ? "all-day" : "possible",
+            };
+          });
+      })
+    )
+    .sort((a, b) => a.orb - b.orb);
+};
 
 const monthsByName = {
   january: "01",
@@ -427,10 +646,51 @@ app.get("/next", async (req, res) => {
   }
 });
 
+app.post("/birthchart/compare", (req, res) => {
+  const fighters = Array.isArray(req.body?.fighters) ? req.body.fighters : [];
+
+  if (fighters.length !== 2) {
+    return res.status(400).json({
+      error: "Exactly two fighters are required for birth chart comparison",
+    });
+  }
+
+  const fighterCharts = fighters.map(buildDateOnlyChart);
+  const warnings = [
+    DATE_ONLY_WARNING,
+    ...fighterCharts.flatMap((fighter) => fighter.warnings),
+  ];
+
+  res.status(200).json({
+    calculationMode: CALCULATION_MODE,
+    fighters: fighterCharts,
+    synastry: findSynastryAspects(fighterCharts[0], fighterCharts[1]),
+    warnings,
+  });
+});
+
+const explainBirthChartComparePost = (req, res) =>
+  res
+    .status(405)
+    .set("Allow", "POST")
+    .json({
+      error:
+        "Use POST with two fighters to compare birth charts. This endpoint is not available as a browser GET page.",
+    });
+
+app.get("/birthchart/compare", explainBirthChartComparePost);
+
 app.get("/api/next", (req, res) => {
   req.url = "/next";
   return app(req, res);
 });
+
+app.post("/api/birthchart/compare", (req, res) => {
+  req.url = "/birthchart/compare";
+  return app(req, res);
+});
+
+app.get("/api/birthchart/compare", explainBirthChartComparePost);
 
 if (require.main === module) {
   const localPort = process.env.PORT || 5000;
