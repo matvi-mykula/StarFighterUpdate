@@ -1,6 +1,5 @@
 import {
-  Accordion,
-  AccordionDetails,
+  Collapse,
   Table,
   TableBody,
   TableCell,
@@ -8,7 +7,9 @@ import {
   TableRow,
   Paper,
   useTheme,
+  IconButton,
 } from "@mui/material";
+import { KeyboardArrowDown, KeyboardArrowUp } from "@mui/icons-material";
 import React from "react";
 import { getSignWithEmoji } from "./scraping/getNextUfcEvent";
 
@@ -40,9 +41,12 @@ const ExpandingRow = ({
         onClick={handleToggle}
         sx={{
           cursor: "pointer",
-          "&:hover": { backgroundColor: theme.palette.action.hover },
+          "& td": {
+            borderBottomColor: "rgba(245,158,11,0.22)",
+          },
+          "&:hover": { backgroundColor: "rgba(34,211,238,0.12)" },
           backgroundColor: expandedRow
-            ? theme.palette.action.selected
+            ? "rgba(245,158,11,0.14)"
             : "inherit",
         }}
       >
@@ -67,54 +71,94 @@ const ExpandingRow = ({
         {/* <TableCell sx={{ textAlign: "center" }}>
           {getMarsSign(birthDates[1].birthDate)}
         </TableCell> */}
+        <TableCell sx={{ textAlign: "center", padding: "0 2px" }}>
+          <IconButton
+            aria-label={
+              expandedRow ? "Collapse matchup details" : "Expand matchup details"
+            }
+            aria-expanded={expandedRow}
+            size="small"
+            onClick={(event) => {
+              event.stopPropagation();
+              handleToggle();
+            }}
+            sx={{
+              color: expandedRow ? "#fde68a" : theme.palette.text.primary,
+              padding: { xs: "2px", sm: "4px" },
+              transition: "color 160ms ease, transform 160ms ease",
+              transform: expandedRow ? "translateY(-1px)" : "translateY(0)",
+            }}
+          >
+            {expandedRow ? (
+              <KeyboardArrowUp fontSize="small" />
+            ) : (
+              <KeyboardArrowDown fontSize="small" />
+            )}
+          </IconButton>
+        </TableCell>
       </TableRow>
 
       {/* Expanding Row */}
-      {expandedRow && (
-        <TableRow>
-          <TableCell colSpan={4} sx={{ padding: 0 }}>
-            <Accordion expanded sx={{ boxShadow: "none", margin: 0 }}>
-              <AccordionDetails
-                sx={{
-                  padding: "4px",
-                  backgroundColor: theme.palette.background.paper,
-                }}
-              >
-                <TableContainer
-                  component={Paper}
-                  sx={{ backgroundColor: theme.palette.primary.light }}
-                >
-                  <Table size="small">
-                    <TableBody>
-                      {matchup
-                        .filter((row) => importantStats.includes(row[0]))
-                        .map((row, index) => (
-                          <TableRow key={index}>
-                            <TableCell
-                              sx={{
-                                fontWeight: "bold",
-                                fontSize: "0.75rem",
-                                width: "25%",
-                              }}
-                            >
-                              {row[0]}
-                            </TableCell>
-                            <TableCell sx={{ fontSize: "0.75rem" }}>
-                              {row[1]}
-                            </TableCell>
-                            <TableCell sx={{ fontSize: "0.75rem" }}>
-                              {row[2]}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </AccordionDetails>
-            </Accordion>
-          </TableCell>
-        </TableRow>
-      )}
+      <TableRow>
+        <TableCell
+          colSpan={5}
+          sx={{
+            padding: 0,
+            borderBottom: expandedRow ? undefined : 0,
+          }}
+        >
+          <Collapse in={expandedRow} timeout={260} unmountOnExit>
+            <TableContainer
+              component={Paper}
+              sx={{
+                backgroundColor: "rgba(15,23,42,0.92)",
+                borderTop: "1px solid rgba(245,158,11,0.25)",
+                borderBottom: "1px solid rgba(34,211,238,0.2)",
+                borderRadius: 0,
+                margin: "4px 0",
+              }}
+            >
+              <Table size="small">
+                <TableBody>
+                  {matchup
+                    .filter((row) => importantStats.includes(row[0]))
+                    .map((row, index) => (
+                      <TableRow key={index}>
+                        <TableCell
+                          sx={{
+                            fontWeight: "bold",
+                            fontSize: "0.75rem",
+                            width: "25%",
+                            color: "#fde68a",
+                            borderBottomColor: "rgba(255,255,255,0.16)",
+                          }}
+                        >
+                          {row[0]}
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            fontSize: "0.75rem",
+                            borderBottomColor: "rgba(255,255,255,0.16)",
+                          }}
+                        >
+                          {row[1]}
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            fontSize: "0.75rem",
+                            borderBottomColor: "rgba(255,255,255,0.16)",
+                          }}
+                        >
+                          {row[2]}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Collapse>
+        </TableCell>
+      </TableRow>
     </>
   );
 };

@@ -1,19 +1,24 @@
 import axios from "axios";
 
 export const getNextUfcEvent = async () => {
+  const baseUrl =
+    process.env.NODE_ENV === "production"
+      ? "/api" // Vercel API functions live under /api
+      : "http://localhost:3000";
+  const url = `${baseUrl}/next`;
+
   try {
-    const baseUrl =
-      process.env.NODE_ENV === "production"
-        ? "/api" // Vercel API functions live under /api
-        : "http://localhost:3000";
-    const url = `${baseUrl}/next`;
-    console.log({ url });
     const { data } = await axios.get(url);
-    console.log({ data }); // Check the fetched data
-    return data; // Process and return the data as needed
+    return data;
   } catch (error) {
-    console.error("Error fetching UFC data:", error);
-    return error;
+    if (axios.isAxiosError(error)) {
+      const serverError = error.response?.data?.error;
+      throw new Error(
+        serverError || error.message || "Unable to load the next UFC card"
+      );
+    }
+
+    throw new Error("Unable to load the next UFC card");
   }
 };
 
