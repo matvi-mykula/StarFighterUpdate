@@ -11,8 +11,6 @@ import {
 } from "@mui/material";
 import React from "react";
 import { getSignWithEmoji } from "./scraping/getNextUfcEvent";
-import getMarsSignApprox from "./scraping/getMarsSignApprox";
-import getMarsSign from "./scraping/getMarsSignApprox";
 
 const ExpandingRow = ({
   matchup,
