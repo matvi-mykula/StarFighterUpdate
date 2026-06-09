@@ -43,6 +43,11 @@ const ExpandingRow = ({
           cursor: "pointer",
           "& td": {
             borderBottomColor: "rgba(245,158,11,0.22)",
+            padding: { xs: "4px 2px", sm: "6px 8px" },
+            fontSize: { xs: "0.72rem", sm: "0.875rem" },
+            lineHeight: 1.15,
+            overflowWrap: "anywhere",
+            wordBreak: "break-word",
           },
           "&:hover": { backgroundColor: "rgba(34,211,238,0.12)" },
           backgroundColor: expandedRow
@@ -59,10 +64,14 @@ const ExpandingRow = ({
         </TableCell>
 
         {/* Fighter 1 Name */}
-        <TableCell sx={{ textAlign: "center" }}>{matchup[0][1]}</TableCell>
+        <TableCell sx={{ textAlign: "center", overflowWrap: "anywhere" }}>
+          {matchup[0][1]}
+        </TableCell>
 
         {/* Fighter 2 Name */}
-        <TableCell sx={{ textAlign: "center" }}>{matchup[0][2]}</TableCell>
+        <TableCell sx={{ textAlign: "center", overflowWrap: "anywhere" }}>
+          {matchup[0][2]}
+        </TableCell>
 
         {/* Fighter 2's Sign */}
         <TableCell sx={{ textAlign: "center" }}>
@@ -71,7 +80,7 @@ const ExpandingRow = ({
         {/* <TableCell sx={{ textAlign: "center" }}>
           {getMarsSign(birthDates[1].birthDate)}
         </TableCell> */}
-        <TableCell sx={{ textAlign: "center", padding: "0 2px" }}>
+        <TableCell sx={{ textAlign: "center", padding: "0 2px !important" }}>
           <IconButton
             aria-label={
               expandedRow ? "Collapse matchup details" : "Expand matchup details"
@@ -116,9 +125,21 @@ const ExpandingRow = ({
                 borderBottom: "1px solid rgba(34,211,238,0.2)",
                 borderRadius: 0,
                 margin: "4px 0",
+                overflowX: "hidden",
               }}
             >
-              <Table size="small">
+              <Table
+                size="small"
+                sx={{
+                  tableLayout: "fixed",
+                  width: "100%",
+                  "& td": {
+                    boxSizing: "border-box",
+                    overflowWrap: "anywhere",
+                    wordBreak: "break-word",
+                  },
+                }}
+              >
                 <TableBody>
                   {matchup
                     .filter((row) => importantStats.includes(row[0]))
@@ -128,7 +149,7 @@ const ExpandingRow = ({
                           sx={{
                             fontWeight: "bold",
                             fontSize: "0.75rem",
-                            width: "25%",
+                            width: { xs: "34%", sm: "25%" },
                             color: "#fde68a",
                             borderBottomColor: "rgba(255,255,255,0.16)",
                           }}

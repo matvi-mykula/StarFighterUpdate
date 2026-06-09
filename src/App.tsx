@@ -90,7 +90,10 @@ export const App: React.FC = () => {
     textAlign: "center",
     fontWeight: "bold",
     size: "small",
-    padding: "4px",
+    padding: { xs: "4px 2px", sm: "4px" },
+    fontSize: { xs: "0.72rem", sm: "0.875rem" },
+    lineHeight: 1.15,
+    overflowWrap: "anywhere",
   };
 
   return (
@@ -197,13 +200,32 @@ export const App: React.FC = () => {
               component={Paper}
               sx={{
                 maxWidth: "100%",
+                overflowX: "hidden",
                 backgroundColor: "rgba(17,24,39,0.82)",
                 border: "1px solid rgba(245,158,11,0.28)",
                 boxShadow:
                   "0 18px 60px rgba(0,0,0,0.35), 0 0 34px rgba(34,211,238,0.12)",
               }}
             >
-              <Table size="small">
+              <Table
+                size="small"
+                sx={{
+                  tableLayout: "fixed",
+                  width: "100%",
+                  "& th, & td": {
+                    boxSizing: "border-box",
+                    overflowWrap: "anywhere",
+                    wordBreak: "break-word",
+                  },
+                }}
+              >
+                <colgroup>
+                  <col style={{ width: "17%" }} />
+                  <col style={{ width: "29%" }} />
+                  <col style={{ width: "29%" }} />
+                  <col style={{ width: "17%" }} />
+                  <col style={{ width: "8%" }} />
+                </colgroup>
                 <TableHead>
                   <TableRow
                     sx={{
@@ -252,7 +274,6 @@ export const App: React.FC = () => {
                     aria-label="Matchup details"
                     sx={{
                       ...cellStyle,
-                      width: { xs: 32, sm: 44 },
                       padding: "4px 2px",
                     }}
                   />
