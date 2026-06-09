@@ -2,6 +2,7 @@ const express = require("express");
 const axios = require("axios");
 const cheerio = require("cheerio");
 const cors = require("cors");
+const crypto = require("crypto");
 
 const app = express();
 const port = 5000;
@@ -15,23 +16,104 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
+const UFC_STATS_BASE_URL = "http://www.ufcstats.com";
+
+const browserHeaders = {
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0",
+  Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "Accept-Language": "en-US,en;q=0.9",
+};
+
+let ufcStatsCookie = "";
+
+const getCookieHeader = (setCookies = []) =>
+  setCookies.map((cookie) => cookie.split(";")[0]).join("; ");
+
+const solveUfcStatsChallenge = async (url, html) => {
+  const nonce = html.match(/var nonce="([^"]+)"/)?.[1];
+  const zeroCount = Number(
+    html.match(/target=new Array\((\d+)\+1\)\.join\('0'\)/)?.[1] || 0
+  );
+
+  if (!nonce || !zeroCount) {
+    throw new Error("UFCStats browser check changed shape");
+  }
+
+  const target = "0".repeat(zeroCount);
+  let n = 0;
+
+  while (
+    !crypto
+      .createHash("sha256")
+      .update(`${nonce}:${n}`)
+      .digest("hex")
+      .startsWith(target)
+  ) {
+    n += 1;
+  }
+
+  const response = await axios.post(
+    new URL("/__c", url).toString(),
+    new URLSearchParams({ nonce, n: String(n) }).toString(),
+    {
+      timeout: 10_000,
+      maxRedirects: 0,
+      validateStatus: () => true,
+      headers: {
+        ...browserHeaders,
+        "Content-Type": "application/x-www-form-urlencoded",
+        Origin: UFC_STATS_BASE_URL,
+        Referer: url,
+        ...(ufcStatsCookie ? { Cookie: ufcStatsCookie } : {}),
+      },
+    }
+  );
+
+  const nextCookie = getCookieHeader(response.headers["set-cookie"]);
+  if (nextCookie) {
+    ufcStatsCookie = nextCookie;
+  }
+};
+
+const fetchUfcStatsPage = async (url) => {
+  const response = await axios.get(url, {
+    timeout: 10_000,
+    headers: {
+      ...browserHeaders,
+      ...(ufcStatsCookie ? { Cookie: ufcStatsCookie } : {}),
+    },
+    maxRedirects: 5,
+  });
+
+  if (
+    typeof response.data === "string" &&
+    response.data.includes("Checking your browser")
+  ) {
+    await solveUfcStatsChallenge(url, response.data);
+
+    const retryResponse = await axios.get(url, {
+      timeout: 10_000,
+      headers: {
+        ...browserHeaders,
+        ...(ufcStatsCookie ? { Cookie: ufcStatsCookie } : {}),
+      },
+      maxRedirects: 5,
+    });
+
+    return retryResponse.data;
+  }
+
+  return response.data;
+};
+
 app.get("/next", async (req, res) => {
   // Step 1: Fetch the upcoming events page from UFCStats
   try {
     /* 1. fetch the page — use https and add full browser headers so Cloudflare
          or ModSecurity doesn’t block the request                        */
-    const url = "http://www.ufcstats.com/statistics/events/completed";
-    const { data: html } = await axios.get(url, {
-      timeout: 10_000,
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0",
-        Accept:
-          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-      },
-      maxRedirects: 5,
-    });
+    const url = `${UFC_STATS_BASE_URL}/statistics/events/completed`;
+    const html = await fetchUfcStatsPage(url);
 
     /* 2. parse the DOM */
     const $ = cheerio.load(html);
@@ -48,7 +130,7 @@ app.get("/next", async (req, res) => {
     /* 4. extract the bits we need */
     const anchor = row.find("a").first();
     const eventName = anchor.text().trim();
-    const eventLink = anchor.attr("href");
+    let eventLink = anchor.attr("href");
     const eventDate = row.find(".b-statistics__date").text().trim();
     const location = row.children("td").last().text().trim();
     // Note: The first row(s) might be header(s). Typically, the first non-header row is at index 1.
@@ -69,18 +151,14 @@ app.get("/next", async (req, res) => {
 
     // If the link is relative, prepend the base URL
     if (!eventLink.startsWith("http")) {
-      eventLink = "http://www.ufcstats.com" + eventLink;
+      eventLink = UFC_STATS_BASE_URL + eventLink;
     }
     console.log(`Found event: ${eventName}`);
     console.log(`Event link: ${eventLink}`);
 
     // Step 4: Fetch the event details page using the event link
     console.log(`Fetching event details from: ${eventLink}`);
-    const { data: eventDetailsData } = await axios.get(eventLink, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-      },
-    });
+    const eventDetailsData = await fetchUfcStatsPage(eventLink);
 
     // Step 5: Load the event details page and extract the event details table
     const $details = cheerio.load(eventDetailsData);
@@ -116,7 +194,7 @@ app.get("/next", async (req, res) => {
         // Try to extract the URL from either href or data-link
         let link = $details(el).attr("href") || $details(el).attr("data-link");
         if (link && !link.startsWith("http")) {
-          link = "http://www.ufcstats.com" + link;
+          link = UFC_STATS_BASE_URL + link;
         }
         return link;
       })
@@ -126,18 +204,12 @@ app.get("/next", async (req, res) => {
 
     // Step 7: Fetch each matchup page concurrently.
     const matchupPages = await Promise.all(
-      firstFourMatchupLinks.map((link) =>
-        axios.get(link, {
-          headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-          },
-        })
-      )
+      firstFourMatchupLinks.map((link) => fetchUfcStatsPage(link))
     );
 
     // Step 8: For each matchup page, extract the matchup table and convert it to a structured object.
-    const matchups = matchupPages.map((response, index) => {
-      const $matchup = cheerio.load(response.data);
+    const matchups = matchupPages.map((html, index) => {
+      const $matchup = cheerio.load(html);
 
       // Find all tables on the page
       const tables = $matchup("table");
