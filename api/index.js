@@ -116,6 +116,7 @@ const Astronomy = require("astronomy-engine");
 const CALCULATION_MODE = "date_only_utc_day_range";
 const DATE_ONLY_WARNING =
   "Birth time unknown; placements are shown as full-day UTC ranges. Houses, rising sign, and Midheaven are omitted.";
+const DISPLAY_ORB_LIMIT = 5;
 
 const chartBodies = [
   "Sun",
@@ -309,7 +310,10 @@ const findSynastryAspects = (firstChart, secondChart) => {
               maxOrb,
             };
           })
-          .filter(({ rule, minOrb }) => minOrb <= rule.orb)
+          .filter(
+            ({ rule, minOrb, maxOrb }) =>
+              minOrb <= rule.orb && maxOrb <= DISPLAY_ORB_LIMIT
+          )
           .map(({ rule, minOrb, maxOrb }) => {
             const roundedMinOrb = roundToTwo(minOrb);
             const roundedMaxOrb = roundToTwo(maxOrb);
